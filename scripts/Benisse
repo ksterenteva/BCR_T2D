@@ -1,0 +1,86 @@
+Rscript Benisse.R \
+/data/terentyeva/pca_matrix_benisse_ready.csv \
+/data/terentyeva/final_bcr_metadata_cleaned.csv \
+/data/terentyeva/encoded_bcr_filtered.csv \
+/data/terentyeva/benisse_output \
+1610 1 100 1 1 10 1e-10
+
+
+
+import pandas as pd
+
+benisse_df = pd.read_csv("clone_annotation1.csv")
+metadata_df = pd.read_csv("AIDA_Phase1_second_level1.csv", sep=";")
+
+benisse_df["barcode"] = benisse_df["barcode"].str.replace(".", "-", regex=False)
+merged_df = pd.merge(benisse_df, metadata_df, on="barcode")
+
+cluster_stats = merged_df.groupby("graph_label").agg(
+    total_cells=pd.NamedAgg(column="barcode", aggfunc=lambda x: x.nunique()),
+    diabetic_cells=pd.NamedAgg(column="T2D", aggfunc=lambda x: (x == 1).sum())
+).reset_index()
+
+cluster_stats = cluster_stats[cluster_stats["total_cells"] > 0]
+cluster_stats["diabetic_ratio"] = cluster_stats["diabetic_cells"] / cluster_stats["total_cells"]
+cluster_stats = cluster_stats.sort_values(by="diabetic_ratio", ascending=False)
+print(cluster_stats)
+
+cluster_stats = cluster_stats[cluster_stats["total_cells"] > 1]
+print(cluster_stats)
+
+
+import pandas as pd
+import numpy as np
+from statsmodels.stats.multitest import multipletests
+
+df = pd.read_csv('clone_annotation1_merged.csv', sep='\t')
+df = df.dropna(subset=['T2D', 'Genotyping_ID', 'graph_label'])
+df['T2D'] = df['T2D'].astype(int)
+df['Genotyping_ID'] = df['Genotyping_ID'].astype(str)
+df = df[df['T2D'].isin([0, 1])]
+
+donors = df.groupby('Genotyping_ID')['T2D'].first().reset_index()
+donor_to_t2d = donors.set_index('Genotyping_ID')['T2D'].to_dict()
+
+observed_stats = {}
+for cluster in df['graph_label'].unique():
+    donor_ids = df[df['graph_label'] == cluster]['Genotyping_ID'].unique()
+    observed_stats[cluster] = sum([donor_to_t2d[did] for did in donor_ids])
+
+n_perm = 1000
+p_values = {}
+donor_ids_all = np.array(list(donor_to_t2d.keys()))
+t2d_labels = np.array(list(donor_to_t2d.values()))
+
+for cluster in df['graph_label'].unique():
+    donor_ids_cluster = df[df['graph_label'] == cluster]['Genotyping_ID'].unique()
+    n_donors = len(donor_ids_cluster)
+    observed = observed_stats[cluster]
+    perm_stats = []
+
+    for _ in range(n_perm):
+        permuted = np.random.permutation(t2d_labels)
+        donor_to_fake_t2d = dict(zip(donor_ids_all, permuted))
+        stat = sum([donor_to_fake_t2d[did] for did in donor_ids_cluster])
+        perm_stats.append(stat)
+
+    p_val = (sum(np.array(perm_stats) >= observed) + 1) / (n_perm + 1)
+    p_values[cluster] = p_val
+
+result_df = pd.DataFrame({
+    'graph_label': list(p_values.keys()),
+    'p_value': list(p_values.values()),
+    'n_T2D_real': [observed_stats[k] for k in p_values.keys()]
+})
+
+result_df['p_adj_fdr'] = multipletests(result_df['p_value'], method='fdr_bh')[1]
+result_df['p_adj_bonferroni'] = multipletests(result_df['p_value'], method='bonferroni')[1]
+
+significant_fdr = result_df[result_df['p_adj_fdr'] < 0.05].sort_values('p_adj_fdr')
+significant_bonf = result_df[result_df['p_adj_bonferroni'] < 0.05].sort_values('p_adj_bonferroni')
+
+result_df.to_csv('permutation_test_corrected.csv', sep='\t', index=False)
+significant_fdr.to_csv('significant_clusters_fdr.csv', sep='\t', index=False)
+significant_bonf.to_csv('significant_clusters_bonferroni.csv', sep='\t', index=False)
+
+significant_fdr
