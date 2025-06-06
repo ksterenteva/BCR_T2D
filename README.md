@@ -12,6 +12,15 @@ To assess the statistical significance of differences, Fisher's criterion follow
 <img width="316" alt="image" src="https://github.com/user-attachments/assets/b5661ae5-319f-417b-8b3a-fd3b8f25e11e" />
 <img width="401" alt="image" src="https://github.com/user-attachments/assets/171cb1c5-e23c-4619-8968-33dcd4a92c22" />
 
+### Benisse 
+
+In this study, we performed an integrative analysis of single B-cell data (single-cell RNA-seq and scBCR-seq) obtained from type 2 diabetic patients and healthy donors to identify B-cell clusters potentially involved in diabetes-specific pathological processes.
+
+For this purpose, we used the Benisse algorithm, a model developed to jointly analyse B-cell receptor (BCR) and transcriptomic data (gene expression) at the level of individual B-cells (single-cell). The model translates each CDR3H sequence into a numerical vector. Next, contrastive learning is applied so that BCRs with similar specificity are closer to each other in this embedding space. In the next step, Benisse trains a new latent space in which nearby BCRs point to similar receptors and simultaneously corresponding cells have similar transcriptome profiles. In this latent space, a sparse graph is constructed where nodes are B-cell clonotypes and edges are similarity-based (expression-corrected) connections between BCRs. This graph allows to identify BCR networks, i.e. groups of B-cells similar in origin and function.
+
+This analysis identified 2921 clusters, of which 1645 contained more than one cell. However, subsequent statistical analysis using the permutation test and adjustment for multiple testing did not identify any B cell clusters enriched with cells from patients with type 2 diabetes (T2D) compared to controls.
+
+### Monocle3
 
 
 
