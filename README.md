@@ -28,7 +28,7 @@ Partis is an HMM-based framework for identifying V(D)J recombinations, estimatin
 
 Analysis of the results obtained using the Partis tool and visualized by UMAP demonstrated that the frequency of somatic hypermutations was significantly higher in memory cells compared to naive B cells, which is consistent with reality. Biologically, naive B cells are cells that have not yet encountered antigen. Their immunoglobulin (Ig) genes retain the germinal sequence, that is, they do not contain SHM. Upon activation, the naive B cell migrates to the germinative center where active proliferation occurs. The cells undergo SHM by the action of the enzyme AID (activation-induced cytidine deaminase). This leads to the accumulation of point mutations in variable regions of Ig genes. Cells whose receptors have an increased affinity for the antigen receive survival signals and differentiate into memory cells or plasma cells. Many studies show that the frequency of SHM in memory cells can range from 5 to 10% of substitutions in variable regions, whereas in naive cells this figure is close to 0%, which is confirmed in our case. 
 
-At the same time, the level of mutations in atypical B cells is comparable to that in naive cells and for the most part their number is 0.
+At the same time, the number of mutations in atypical B-cells is also often 0, which may be due to their formation outside the germinal centers through the extrafollicular activation pathway, which does not include the affinity maturation stage necessary for the accumulation of somatic hypermutations.
 
 <p align="center">
   <img width="468" src="https://github.com/user-attachments/assets/406dd9e9-b668-4a9b-9d64-63ec49c142ad" style="display:inline-block; margin-right:10px;" />
