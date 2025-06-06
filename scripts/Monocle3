@@ -1,0 +1,115 @@
+expression_matrix <- read.csv("/data/terentyeva/aida_bcr_filtered_expression.csv", row.names = 1)
+expression_matrix <- as.matrix(expression_matrix)
+meta <- read.delim("/data/AIDA/DataAnalysis/AIDA_Phase1_second_level.tsv",
+                   sep = "\t", header = TRUE, stringsAsFactors = FALSE)
+meta$barcode_name <- gsub("-", ".", meta$barcode_name)
+meta <- meta[!duplicated(meta$barcode_name), ]
+rownames(meta) <- meta$barcode_name
+meta <- meta[, !(names(meta) %in% "barcode_name")]
+meta_filtered <- meta[colnames(expression_matrix), ]
+all(colnames(expression_matrix) %in% rownames(meta_filtered))
+gene_annotation <- data.frame(gene_short_name = rownames(expression_matrix))
+rownames(gene_annotation) <- rownames(expression_matrix)
+library(monocle3)
+cds <- new_cell_data_set(expression_matrix,
+                          cell_metadata = meta_filtered,
+                          gene_metadata = gene_annotation)
+cds <- preprocess_cds(cds, num_dim = 100)
+cds <- align_cds(cds, alignment_group = "orig.ident")
+cds <- reduce_dimension(cds)
+cds <- cluster_cells(cds)
+cds <- learn_graph(cds)
+root_cell <- colnames(cds)[clusters(cds) == "5"][1]
+cds <- order_cells(cds, root_cells = root_cell)
+
+png("/data/terentyeva/plots/pseudotime_umap.png", width = 1200, height = 900, res = 150)
+
+plot_cells(cds,
+           color_cells_by = "pseudotime",
+           label_cell_groups = FALSE,
+           label_leaves = TRUE,
+           label_branch_points = TRUE)
+
+dev.off()
+
+#диф экспрессия по типам клеток 
+
+# B atypical
+
+cell_type_column <- "Annotation_Level_2"
+target_type <- "B atypical" 
+
+cds_atypical <- cds[, colData(cds)[[cell_type_column]] == target_type]
+
+cds_atypical <- preprocess_cds(cds_atypical, num_dim = 50)
+cds_atypical <- reduce_dimension(cds_atypical, preprocess_method = "PCA")
+cds_atypical <- cluster_cells(cds_atypical)
+
+gene_fits <- fit_models(cds_atypical, model_formula_str = "~T2D")
+fit_coefs <- coefficient_table(gene_fits)
+
+t2d_terms <- fit_coefs %>%
+  filter(term == "T2D") %>%
+  mutate(q_value = p.adjust(p_value, method = "fdr")) %>%
+  filter(q_value < 0.05)
+
+t2d_terms <- t2d_terms %>%
+  select(where(~ !is.list(.)))
+
+write.csv(t2d_terms,
+          "/data/terentyeva/deg_by_celltype/DEG_T2D_vs_Healthy_B_atypical.csv",
+          row.names = FALSE)
+
+
+# B memory
+
+cell_type_column <- "Annotation_Level_2"
+target_type <- "B memory" 
+
+cds_memory <- cds[, colData(cds)[[cell_type_column]] == target_type]
+
+cds_memory <- preprocess_cds(cds_memory, num_dim = 50)
+cds_memory <- reduce_dimension(cds_memory, preprocess_method = "PCA")
+cds_memory <- cluster_cells(cds_memory)
+
+gene_fits <- fit_models(cds_memory, model_formula_str = "~T2D")
+fit_coefs <- coefficient_table(gene_fits)
+
+t2d_terms <- fit_coefs %>%
+  filter(term == "T2D") %>%
+  mutate(q_value = p.adjust(p_value, method = "fdr")) %>%
+  filter(q_value < 0.05)
+
+t2d_terms <- t2d_terms %>%
+  select(where(~ !is.list(.)))
+
+write.csv(t2d_terms,
+          "/data/terentyeva/deg_by_celltype/DEG_T2D_vs_Healthy_B_memory.csv",
+          row.names = FALSE)
+
+
+# B naive
+
+cell_type_column <- "Annotation_Level_2"
+target_type <- "B naive" 
+
+cds_naive <- cds[, colData(cds)[[cell_type_column]] == target_type]
+
+cds_naive <- preprocess_cds(cds_naive, num_dim = 50)
+cds_naive <- reduce_dimension(cds_naive, preprocess_method = "PCA")
+cds_naive <- cluster_cells(cds_naive)
+
+gene_fits <- fit_models(cds_naive, model_formula_str = "~T2D")
+fit_coefs <- coefficient_table(gene_fits)
+
+t2d_terms <- fit_coefs %>%
+  filter(term == "T2D") %>%
+  mutate(q_value = p.adjust(p_value, method = "fdr")) %>%
+  filter(q_value < 0.05)
+
+t2d_terms <- t2d_terms %>%
+  select(where(~ !is.list(.)))
+
+write.csv(t2d_terms,
+          "/data/terentyeva/deg_by_celltype/DEG_T2D_vs_Healthy_B_naive.csv",
+          row.names = FALSE)
