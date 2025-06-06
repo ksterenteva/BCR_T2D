@@ -1,0 +1,286 @@
+system("apt-get update")
+system("apt-get install -y libgsl-dev libssl-dev libcurl4-openssl-dev libxml2-dev")
+
+install.packages("BiocManager")
+BiocManager::install(version = "3.21", ask = FALSE)
+
+
+install.packages(c("ggforce", "ggrepel", "ggalluvial", "ggraph", "igraph",
+                   "reshape2", "SeuratObject", "SingleCellExperiment",
+                   "tidygraph", "stringdist", "VGAM", "hash"))
+
+BiocManager::install("SingleCellExperiment")
+
+BiocManager::install(c("GenomicRanges", "DelayedArray", "MatrixGenerics",
+                        "Biobase", "IRanges", "GenomeInfoDb",
+                        "S4Vectors", "SummarizedExperiment"), force = TRUE)
+
+library(GenomicRanges)
+library(DelayedArray)
+library(MatrixGenerics)
+library(Biobase)
+library(IRanges)
+library(GenomeInfoDb)
+library(S4Vectors)
+library(SummarizedExperiment)
+
+BiocManager::install("scRepertoire", force = TRUE)
+
+library(scRepertoire)
+
+metadata_file <- "AIDA_Phase1_second_level1.csv"
+
+my_pbmc <- read.csv(metadata_file, sep = ";", header = TRUE, stringsAsFactors = FALSE)
+my_pbmc <- subset(my_pbmc, Annotation_Level_1 == "B")
+
+my_pbmc$barcode_name <- sub("_L001", "_L1", my_pbmc$barcode_name)
+my_pbmc$barcode_name <- sub("_L002", "_L2", my_pbmc$barcode_name)
+
+my_pbmc$barcode_name <- paste0(sub(".*_(B[0-9]+_L[0-9]+)$", "\\1", my_pbmc$barcode_name), "_", my_pbmc$barcode_name)
+
+bcr_files <- list.files(path = ".", pattern = "filtered_contig_annotations_with_sample_.*.csv", full.names = TRUE)
+bcr_list <- lapply(bcr_files, read.csv)
+names(bcr_list) <- sub(".*sample_", "", sub(".csv", "", basename(bcr_files)))
+
+## Объединяем BCR
+
+combined.BCR <- combineBCR(bcr_list,
+                           samples = names(bcr_list),
+                           removeNA = TRUE,
+                           removeMulti = FALSE)
+
+library(dplyr)
+
+combined_df <- bind_rows(combined.BCR, .id = "sample_id")
+combined_df <- merge(combined_df, my_pbmc[, c("barcode_name", "Genotyping_ID", "ethnicity", "age", "T2D", "sex")],
+                     by.x = "barcode", by.y = "barcode_name", all.x = TRUE)
+
+# удаляем донора 8897 Mixed
+combined_df <- combined_df %>% filter(Genotyping_ID != "8897")
+
+# Добавляем группы по возрасту, диабету и полу
+combined_df$Group <- NA
+combined_df$Group[combined_df$age < 50] <- 'Age < 50'
+combined_df$Group[combined_df$age >= 50] <- 'Age >= 50'
+combined_df$Group[combined_df$T2D == 1] <- 'T2D'
+
+# Создаем список по sample_id (или Donor, если так удобнее)
+combined.BCR <- split(combined_df, combined_df$sample_id)
+
+## Оценка клонального разнообразия
+
+### Больные/здоровые
+
+# Добавляем группы по возрасту, диабету, полу
+combined_df$Group <- NA
+combined_df$Group[combined_df$T2D == 1] <- 'T2D'      # Больные диабетом
+combined_df$Group[combined_df$T2D == 0] <- 'Control'  # Здоровые
+
+# Создаем список по sample_id
+combined.BCR <- split(combined_df, combined_df$sample_id)
+
+# Оцениваем клональное разнообразие с учетом пола
+clonal_diversity_disease <- clonalDiversity(
+  combined.BCR,
+  cloneCall = "strict",
+  group.by = "Group",   # Теперь есть и Age, и T2D, и Sex
+  exportTable = TRUE,
+  n.boots = 100
+)
+
+# Проверяем результат
+head(clonal_diversity_disease)
+summary(clonal_diversity_disease)
+
+str(combined.BCR)
+
+### По полу
+
+# Добавляем группы по возрасту, диабету, полу
+combined_df$Group <- NA
+combined_df$Group[combined_df$sex == 0] <- 'Female'   # Женщины
+combined_df$Group[combined_df$sex == 1] <- 'Male'     # Мужчины
+
+# Создаем список по sample_id
+combined.BCR <- split(combined_df, combined_df$sample_id)
+
+# Оцениваем клональное разнообразие с учетом пола
+clonal_diversity_sex <- clonalDiversity(
+  combined.BCR,
+  cloneCall = "strict",
+  group.by = "Group",   # Теперь есть и Age, и T2D, и Sex
+  exportTable = TRUE,
+  n.boots = 100
+)
+
+# Проверяем результат
+head(clonal_diversity_sex)
+summary(clonal_diversity_sex)
+
+
+# Добавляем группы по возрасту, диабету и полу
+combined_df$Group <- NA
+combined_df$Group[combined_df$age < 50] <- 'Age < 50'
+combined_df$Group[combined_df$age >= 50] <- 'Age >= 50'
+
+# Создаем список по sample_id
+combined.BCR <- split(combined_df, combined_df$sample_id)
+
+# Оцениваем клональное разнообразие с учетом пола
+clonal_diversity_age <- clonalDiversity(
+  combined.BCR,
+  cloneCall = "strict",
+  group.by = "Group",   # Теперь есть и Age, и T2D, и Sex
+  exportTable = TRUE,
+  n.boots = 100
+)
+
+# Проверяем результат
+head(clonal_diversity_age)
+summary(clonal_diversity_age)
+
+# Оценка клонального разнообразия
+clonal_diversity_bcr <- clonalDiversity(
+  combined.BCR,
+  cloneCall = "strict",
+  group.by = "Group",
+  exportTable = TRUE,
+  n.boots = 100
+)
+
+head(clonal_diversity_bcr)
+summary(clonal_diversity_bcr)
+
+
+# VJ анализ
+
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(scRepertoire)
+
+meta_file <- "AIDA_Phase1_second_level1.csv"
+meta <- read.csv(meta_file, sep = ";", stringsAsFactors = FALSE)
+
+meta <- meta %>% filter(Annotation_Level_1 == "B")
+
+meta$barcode_clean <- sub("^B[0-9]+_L[0-9]+_", "", meta$barcode_name)
+
+bcr_files <- list.files(pattern = "^filtered_contig_annotations_B[0-9]+_L[0-9]+\\.csv$", full.names = TRUE)
+
+read_and_format_bcr <- function(file) {
+  df <- read.csv(file, stringsAsFactors = FALSE)
+  suffix <- gsub(".*filtered_contig_annotations_(B[0-9]+_L[0-9]+)\\.csv", "\\1", basename(file))
+  suffix <- gsub("L([0-9])$", "L00\\1", suffix)
+  df$barcode <- paste0(df$barcode, "-", suffix)
+  df$barcode <- gsub("-1-", "-RU_", df$barcode)
+  return(df)
+}
+
+# Создаем именованный список
+bcr_list <- setNames(lapply(bcr_files, read_and_format_bcr), nm = basename(bcr_files))
+
+# Обновим список, чтобы привести названия колонок к нужному формату и добавить cdr3_nt
+bcr_list <- lapply(bcr_list, function(df) {
+  colnames(df) <- tolower(colnames(df))  # Приведение всех названий к нижнему регистру
+
+  if (!"cdr3_nt" %in% colnames(df) && "cdr3_nt1" %in% colnames(df)) {
+    df$cdr3_nt <- df$cdr3_nt1
+  }
+
+  return(df)
+})
+
+combined.BCR <- combineBCR(
+  bcr_list,
+  samples = names(bcr_list),
+  removeNA = TRUE,
+  removeMulti = FALSE
+)
+
+combined_df <- bind_rows(combined.BCR, .id = "sample_id")
+combined_df$barcode <- sub("^.+?_(\\w+-RU_\\w+_\\w+)$", "\\1", combined_df$barcode)
+
+final_df <- merge(
+  combined_df,
+  meta[, c("barcode", "Genotyping_ID", "ethnicity", "age", "T2D", "sex")],
+  by.x = "barcode", by.y = "barcode",
+  all.x = TRUE
+)
+
+final_df <- final_df %>% filter(Genotyping_ID != "8897")
+final_df$Group <- ifelse(final_df$T2D == 1, "T2D", "Control")
+
+## Стратификация
+
+
+df <- final_df %>%
+  mutate(age_group = ifelse(age < 50, "<50", "50+"))
+
+group_sizes <- df %>%
+  group_by(sex, ethnicity, age_group) %>%
+  summarise(min_n = n(), .groups = "drop")
+
+min_n_df <- group_sizes %>%
+  group_by(sex, ethnicity, age_group) %>%
+  summarise(min_n = min(min_n), .groups = "drop")
+
+stratified_df <- df %>%
+  left_join(min_n_df, by = c("sex", "ethnicity", "age_group")) %>%
+  group_by(sex, ethnicity, age_group) %>%
+  group_map(~ slice_sample(.x, n = .x$min_n[1]), .keep = TRUE) %>%
+  bind_rows()
+
+stratified_df %>%
+  count(sex, ethnicity, age_group)
+  
+  
+  # Точно так же, но по j_gene
+j_df <- stratified_df %>%
+  filter(!is.na(IGH)) %>%
+  separate(IGH, into = c("v_gene", "d_gene", "j_gene", "c_gene"), sep = "\\.", remove = FALSE)
+
+j_counts <- j_df %>%
+  count(j_gene, Group) %>%
+  pivot_wider(names_from = Group, values_from = n, values_fill = 0)
+
+total_T2D <- sum(j_counts$T2D)
+total_Control <- sum(j_counts$Control)
+
+j_stats <- j_counts %>%
+  rowwise() %>%
+  mutate(
+    freq_T2D = T2D / total_T2D,
+    freq_Control = Control / total_Control,
+    p_value = fisher.test(matrix(c(T2D, Control,
+                                   total_T2D - T2D,
+                                   total_Control - Control), nrow = 2))$p.value,
+    log2fc = log2((freq_T2D + 1e-6) / (freq_Control + 1e-6))
+  ) %>%
+  ungroup() %>%
+  mutate(q_value = p.adjust(p_value, method = "fdr")) %>%
+  arrange(q_value)
+
+# Уникальные J-гены
+j_unique <- j_stats %>%
+  filter((T2D == 0 & Control > 0) | (Control == 0 & T2D > 0)) %>%
+  mutate(unique_to = ifelse(T2D == 0, "Control", "T2D"))
+  
+  # Переводим данные в long-формат для ggplot
+plot_j <- j_stats %>%
+  select(j_gene, freq_T2D, freq_Control) %>%
+  pivot_longer(cols = c(freq_T2D, freq_Control),
+               names_to = "Group",
+               values_to = "freq") %>%
+  mutate(Group = recode(Group, freq_T2D = "T2D", freq_Control = "Control"))
+
+ggplot(plot_j, aes(x = reorder(j_gene, -freq), y = freq, fill = Group)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  coord_flip() +
+  labs(
+    title = "J gene usage frequency (T2D vs Control)",
+    x = "J gene",
+    y = "Frequency"
+  ) +
+  theme_minimal() +
+  theme(axis.text.y = element_text(size = 8))
