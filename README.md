@@ -2,7 +2,16 @@
 
 ### Preliminary statistics
 
-The total number of unique B cells was 9119.
+The histogram of donor age distribution shows that the range of donor ages is approximately 18 to 75 years. Healthy donors cover almost the entire age spectrum, while donors with T2D are concentrated mainly in the age range of 45 years and older, which is expected since T2D develops predominantly in adulthood
+
+In all samples, most barcodes have exactly 2 chains, which is expected and reflects the high quality of BCR assembly. In a number of cells, 3 chains are observed, which is an unusual phenomenon. There is B020_L2 patch, which contains much more cells, and there are other B012_L1, B019_L2, B021_L1 batches, on the contrary, contain a very small number of B cells, which should be taken into account in further analysis.
+
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/90025d06-d325-4c04-82d5-eb5318b55d77" width="48%" />
+  <img src="https://github.com/user-attachments/assets/4e148289-5439-45e2-ac00-12f92a074226" width="48%" />
+</p>
+
+The total number of unique B cells was 9119 after filtering the cells for those with at least 2 chains and removing cells from the control donor.
 
 | B cell type | Unique B cells Healthy | Unique B cells T2D |
 | --- | --- | --- |
@@ -12,16 +21,14 @@ The total number of unique B cells was 9119.
 | Plasma B  | 56 | 16 |
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/90025d06-d325-4c04-82d5-eb5318b55d77" width="48%" />
-  <img src="https://github.com/user-attachments/assets/4e148289-5439-45e2-ac00-12f92a074226" width="48%" />
-</p>
-
-<p align="center">
   <img src="https://github.com/user-attachments/assets/2364e086-2dff-4f93-b519-73a965265eb6" width="48%" />
   <img src="https://github.com/user-attachments/assets/6d17285d-c759-474f-a5c3-1f0994aadaa0" width="48%" />
 </p>
 
+B-cell subtypes are well separated in UMAP space. The Plasma B NA cluster, which is located isolated from the others, is particularly distinct. One can see how naive cells flow into the cluster of memory cells, which make up the bulk of the cells.
 ![Unknown-9](https://github.com/user-attachments/assets/a45136a5-9d39-4e92-9104-37c9a95b1fac)
+
+Cells from healthy donors and T2D patients are intermixed in UMAP space, suggesting a similar B-cell phenotype between the groups. Localized areas with increased red dot density are visible, especially in the B memory cluster.
 ![Unknown-10](https://github.com/user-attachments/assets/044e6222-ed0d-4225-87a9-417739473d83)
 
 ### scRepertoire
