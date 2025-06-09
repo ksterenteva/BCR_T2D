@@ -1,5 +1,11 @@
 # Analysis of BCR repertoire in patients with type 2 diabetes
 
+T2D is a chronic non-infectious disease characterized by progressive loss of insulin secretion by pancreatic β-cells on the background of insulin resistance (IR). Its development is closely associated with chronic inflammation, oxidative stress that damages β-cells and increases IR, endoplasmic reticulum stress (ERS) that causes apoptosis of β-cells due to protein overload, and ectopic fat accumulation in liver, muscle, and the pancreas itself.
+
+Early studies revealed that type 2 diabetic patients have alterations in the composition, activation of B cells and in their receptor (BCR) repertoire. This suggests a potential role for B cells in the maintenance of chronic inflammation underlying insulin resistance and β-cell dysfunction. Shifts in V(D)J-segment utilization suggest the presence of antigen-specific stimulation, so it is important to study the features of the BCR repertoire in these patients in more detail to understand which antigens support pathologic activation. This may facilitate the search for new biomarkers and the development of new therapies for T2D.
+
+
+
 ### Preliminary statistics
 
 The histogram of donor age distribution shows that the range of donor ages is approximately 18 to 75 years. Healthy donors cover almost the entire age spectrum, while donors with T2D are concentrated mainly in the age range of 45 years and older, which is expected since T2D develops predominantly in adulthood
