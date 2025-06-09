@@ -1,5 +1,29 @@
 # Analysis of BCR repertoire in patients with type 2 diabetes
 
+### Preliminary statistics
+
+The total number of unique B cells was 9119.
+
+| B cell type | Unique B cells Healthy | Unique B cells T2D |
+| --- | --- | --- |
+| B atypical | 616 | 303 |
+| B memory | 3054 | 1180 |
+| B naive | 2489 | 1405 |
+| Plasma B  | 56 | 16 |
+
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/90025d06-d325-4c04-82d5-eb5318b55d77" width="48%" />
+  <img src="https://github.com/user-attachments/assets/4e148289-5439-45e2-ac00-12f92a074226" width="48%" />
+</p>
+
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/2364e086-2dff-4f93-b519-73a965265eb6" width="48%" />
+  <img src="https://github.com/user-attachments/assets/6d17285d-c759-474f-a5c3-1f0994aadaa0" width="48%" />
+</p>
+
+![Unknown-9](https://github.com/user-attachments/assets/a45136a5-9d39-4e92-9104-37c9a95b1fac)
+![Unknown-10](https://github.com/user-attachments/assets/044e6222-ed0d-4225-87a9-417739473d83)
+
 ### scRepertoire
 
 To identify differences in clonal diversity of the B-cell receptor (BCR) repertoire between patients with type 2 diabetes mellitus (T2D) and controls, a quantitative analysis was performed using the clonalDiversity function of the scRepertoire package. Clonotypes were defined based on strict CDR3-sequence matching, and diversity was assessed using several metrics: the Shannon index, inverse Simpson index, Gini-Simpson index, normalised entropy, and richness scores including Chao1 and ACE. For most metrics, no significant differences were found between groups. However, the Chao1 score, which reflects the estimated number of unique clones taking into account rare clones, was markedly higher in T2D patients compared to controls (362,753 vs 118,857, respectively), which may indicate an increase in rare clonal populations in diabetic patients. Analysis of BCR repertoire in patients with type 2 diabetes
